@@ -18,7 +18,8 @@ export function supabaseEnv() {
   };
 }
 
-const siteUrlSchema = z.httpUrl();
+// Not z.httpUrl(): it requires a domain name, so it rejects localhost and IP addresses.
+const siteUrlSchema = z.url({ protocol: /^https?$/ });
 
 /**
  * The app's public origin, used for links in emails and OAuth redirects. Never derived from the
