@@ -18,12 +18,24 @@ export function supabaseEnv() {
   };
 }
 
+const siteUrlSchema = z.httpUrl();
+
 /**
  * The app's public origin, used for links in emails and OAuth redirects. Never derived from the
  * request's Host header, which a client controls.
  */
 export function siteUrl(): string {
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/+$/, "");
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
-  return "http://localhost:3000";
+  const configured =
+    process.env.SITE_URL ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
+
+  if (!configured) {
+    // Falling back to localhost in production would break every sign-in link without an error.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Set SITE_URL, or deploy on Railway, which sets RAILWAY_PUBLIC_DOMAIN.");
+    }
+    return "http://localhost:3000";
+  }
+
+  return siteUrlSchema.parse(configured).replace(/\/+$/, "");
 }

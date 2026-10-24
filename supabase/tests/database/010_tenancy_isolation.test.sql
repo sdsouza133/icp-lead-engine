@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(33);
 
 -- Fixtures, created as the migration owner (row-level security does not apply) -------------------
 
@@ -76,7 +76,7 @@ select throws_ok(
 
 reset role;
 
--- Alice owns Org A (8) ---------------------------------------------------------------------------
+-- Alice owns Org A (11)---------------------------------------------------------------------------
 
 set local role authenticated;
 set local request.jwt.claims to
@@ -118,6 +118,12 @@ select throws_ok(
   'an owner cannot invite people into another workspace'
 );
 
+update public.memberships set role = 'member'
+where org_id = '10000000-0000-4000-8000-00000000000b';
+delete from public.memberships
+where org_id = '10000000-0000-4000-8000-00000000000b';
+delete from public.invitations
+where org_id = '10000000-0000-4000-8000-00000000000b';
 update public.organizations set name = 'Taken over'
 where id = '10000000-0000-4000-8000-00000000000b';
 update public.organizations set name = 'Org A renamed'
@@ -125,6 +131,24 @@ where id = '10000000-0000-4000-8000-00000000000a';
 
 reset role;
 
+select is(
+  (select role::text from public.memberships
+   where org_id = '10000000-0000-4000-8000-00000000000b'),
+  'owner',
+  'an owner cannot change another workspace''s roles'
+);
+select is(
+  (select count(*)::int from public.memberships
+   where org_id = '10000000-0000-4000-8000-00000000000b'),
+  1,
+  'an owner cannot remove another workspace''s members'
+);
+select is(
+  (select count(*)::int from public.invitations
+   where org_id = '10000000-0000-4000-8000-00000000000b'),
+  1,
+  'an owner cannot revoke another workspace''s invitations'
+);
 select is(
   (select name from public.organizations where id = '10000000-0000-4000-8000-00000000000b'),
   'Org B',

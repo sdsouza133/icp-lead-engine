@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(23);
 
 -- Fixtures, created as the migration owner -------------------------------------------------------
 
@@ -186,6 +186,28 @@ set local request.jwt.claims to
   '{"sub":"00000000-0000-4000-8000-00000000000d","role":"authenticated","email":"dave@example.com"}';
 
 select is_empty('select id from public.organizations', 'an expired grant gives no access');
+
+-- Staff admins read a workspace's audit log only with a grant (3) --------------------------------
+
+set local request.jwt.claims to
+  '{"sub":"00000000-0000-4000-8000-00000000000e","role":"authenticated","email":"erin@example.com"}';
+
+select is_empty(
+  $$select id from public.audit_log
+    where org_id = (select value::uuid from fixture_values where key = 'org')$$,
+  'a staff admin without a grant cannot read a workspace''s audit log'
+);
+select lives_ok(
+  $$select public.grant_staff_access(
+      (select value::uuid from fixture_values where key = 'org'),
+      '00000000-0000-4000-8000-00000000000e', 'Reviewing the audit trail', 15)$$,
+  'a staff admin can grant themselves time-limited access'
+);
+select isnt_empty(
+  $$select id from public.audit_log
+    where org_id = (select value::uuid from fixture_values where key = 'org')$$,
+  'with a grant, a staff admin can read that workspace''s audit log'
+);
 
 reset role;
 

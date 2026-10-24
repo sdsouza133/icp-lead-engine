@@ -353,8 +353,13 @@ create policy "staff read their grants; staff admins read all"
 create policy "owners and staff admins read the audit log"
   on public.audit_log for select to authenticated
   using (
-    private.is_staff_admin()
-    or private.has_org_role(org_id, array['owner']::public.org_role[])
+    private.has_org_role(org_id, array['owner']::public.org_role[])
+    or (
+      -- Like any workspace data, a workspace's audit trail needs an active grant. Rows whose
+      -- workspace was deleted (org_id is null) stay readable by staff admins.
+      private.is_staff_admin()
+      and (org_id is null or private.has_staff_access(org_id))
+    )
   );
 
 -- Table privileges: nothing for anonymous visitors, and signed-in users may only write the

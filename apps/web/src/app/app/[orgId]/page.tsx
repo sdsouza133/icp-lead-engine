@@ -10,6 +10,7 @@ const ERRORS: Record<string, string> = {
   duplicate: "That person already has a pending invitation.",
   "invite-failed": "We couldn't create the invitation.",
   revoke: "We couldn't revoke that invitation.",
+  forbidden: "Only owners and admins can manage invitations.",
 };
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium" });
