@@ -42,4 +42,6 @@ jobs:
       - uses: supabase/setup-cli@v3
       # Applies every migration to a fresh database, then runs the pgTAP tests in supabase/tests.
       - run: supabase db start
+      # plpgsql_check catches errors inside function bodies that the tests might not reach.
+      - run: supabase db lint --local --schema public,private --fail-on error
       - run: supabase test db
