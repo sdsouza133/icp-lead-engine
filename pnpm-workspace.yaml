@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 blocks dependency install scripts unless they are listed here.
+# supabase downloads the CLI binary on install; esbuild verifies its platform binary.
+onlyBuiltDependencies:
+  - esbuild
+  - supabase
+
+# protobufjs only runs a version check on install.
+ignoredBuiltDependencies:
+  - protobufjs

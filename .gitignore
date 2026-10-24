@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment: this repo is public, so no real values are ever committed
+.env
+.env.*
+!.env.example
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# Railway saved plans can contain resolved values
+railway-plan.json
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+tone_instructions: >-
+  Be direct and specific. Lead with correctness, security and tenant-isolation problems;
+  skip style nits that Biome already enforces.
+
+reviews:
+  profile: assertive
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["main"]
+  path_filters:
+    - "!pnpm-lock.yaml"
+    - "!**/database.types.ts"
+  path_instructions:
+    - path: "supabase/migrations/**"
+      instructions: |
+        - Every new tenant table must enable row-level security, have policies that check both the
+          workspace (org_id) and the member's role, and ship with a pgTAP test in supabase/tests
+          proving one workspace cannot read or write another's rows.
+        - Shared-cache tables must not be readable by the anon or authenticated roles.
+        - No destructive change (drop, rename, type change) without a backfill and rollback plan.
+        - High-volume tables (post_engagements, run_candidates) must be partitioned by month.
+    - path: "supabase/tests/**"
+      instructions: |
+        - Tests must cover the negative case: a user from another workspace gets no rows.
+    - path: "packages/providers/**"
+      instructions: |
+        - Every external call needs a timeout, retries with backoff for retryable errors only,
+          response validation with zod, and per-item cost reporting.
+        - Never log personal data (names, emails, LinkedIn URLs); log IDs only.
+    - path: "packages/pipeline/**"
+      instructions: |
+        - Inngest SDK v4: triggers go in the createFunction options; events are declared with
+          eventType(). Event payloads carry IDs only, never personal data.
+        - Steps must be idempotent and keyed per item, check the run's budget, and use concurrency
+          keys so one workspace cannot starve the others.
+        - Claude calls use claude-opus-5-5 unless the plan's phase 3 decision says otherwise, and
+          must handle the refusal stop reason.
+    - path: "apps/web/**"
+      instructions: |
+        - No secret or service key may reach client components or NEXT_PUBLIC_ variables.
+        - Every server action and route handler must check the caller's workspace membership and role.
+    - path: "apps/worker/**"
+      instructions: |
+        - The worker must not use the Supabase service key for tenant data once the worker role exists.
+    - path: ".railway/**"
+      instructions: |
+        - Secret values must use preserve(); this repository is public.
+    - path: ".github/workflows/**"
+      instructions: |
+        - Keep permissions minimal and pin actions to a major version.
+  tools:
+    biome:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    squawk:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CLAUDE.md"
+      - "docs/ARCHITECTURE.md"
